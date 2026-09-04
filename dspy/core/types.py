@@ -1908,7 +1908,7 @@ def _binary_dict_to_part(file: dict[str, Any]) -> LMBinaryPart:
         media_type, data = _split_data_uri(file["data"])
         return LMBinaryPart(data=data, media_type=media_type, filename=file.get("filename"))
     if file.get("file_id") is not None:
-        return LMBinaryPart(file_id=file["file_id"], filename=file.get("filename"))
+        return LMBinaryPart(file_id=file.get("file_id"), filename=file.get("filename"), media_type=file.get("format"))
     raise ValueError("Binary content block requires data, file_data, or file_id.")
 
 
