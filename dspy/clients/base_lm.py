@@ -48,10 +48,14 @@ def _import_lm_class(class_path: str) -> type:
             continue
 
         if not isinstance(obj, type):
-            raise TypeError(f"Serialized LM class `{class_path}` did not resolve to a class.")
+            raise TypeError(
+                f"Serialized LM class `{class_path}` did not resolve to a class."
+            )
         return obj
 
-    raise ImportError(f"Could not import serialized LM class `{class_path}`.") from last_error
+    raise ImportError(
+        f"Could not import serialized LM class `{class_path}`."
+    ) from last_error
 
 
 class BaseLM:
@@ -198,11 +202,15 @@ class BaseLM:
         self.cache = cache
         self.callbacks = list(callbacks or [])
         self.num_retries = num_retries
-        self.kwargs = self._get_initial_kwargs(temperature=temperature, max_tokens=max_tokens, **kwargs)
+        self.kwargs = self._get_initial_kwargs(
+            temperature=temperature, max_tokens=max_tokens, **kwargs
+        )
         self.history = []
         self._warned_zero_temp_rollout = False
 
-    def _get_initial_kwargs(self, *, temperature, max_tokens, **kwargs) -> dict[str, Any]:
+    def _get_initial_kwargs(
+        self, *, temperature, max_tokens, **kwargs
+    ) -> dict[str, Any]:
         return dict(temperature=temperature, max_tokens=max_tokens, **kwargs)
 
     def _declares_forward_contract(self) -> bool:
@@ -292,7 +300,9 @@ class BaseLM:
             outputs = self._process_completion(response, merged_kwargs)
 
         if not getattr(response, "cache_hit", False) and settings.usage_tracker:
-            settings.usage_tracker.add_usage(self.model, dict(getattr(response, "usage", {}) or {}))
+            settings.usage_tracker.add_usage(
+                self.model, dict(getattr(response, "usage", {}) or {})
+            )
 
         if settings.disable_history:
             return outputs
@@ -353,19 +363,25 @@ class BaseLM:
             `LMResponse` for explicit `LMRequest` calls or `experimental=True`; otherwise DSPy's legacy list of output
             strings or dictionaries, even when a typed LM subclass uses the typed path internally.
         """
-        return_typed_response, forward_contract, normalized_request = self._prepare_lm_call(
-            items=items,
-            prompt=prompt,
-            messages=messages,
-            request=request,
-            kwargs=kwargs,
+        return_typed_response, forward_contract, normalized_request = (
+            self._prepare_lm_call(
+                items=items,
+                prompt=prompt,
+                messages=messages,
+                request=request,
+                kwargs=kwargs,
+            )
         )
         if normalized_request is None:
-            return self._legacy_call_direct(*items, prompt=prompt, messages=messages, **kwargs)
+            return self._legacy_call_direct(
+                *items, prompt=prompt, messages=messages, **kwargs
+            )
 
         if forward_contract == "typed_lm":
             response = self.forward(normalized_request)
-            response = self._finalize_lm_response(normalized_request, self._validate_typed_lm_response(response))
+            response = self._finalize_lm_response(
+                normalized_request, self._validate_typed_lm_response(response)
+            )
         else:
             response = self._legacy_forward_as_lm_response(normalized_request)
         if return_typed_response:
@@ -386,19 +402,25 @@ class BaseLM:
         This is the async equivalent of `__call__()`. It preserves legacy outputs by default and returns
         `dspy.LMResponse` for explicit `LMRequest` calls or experimental direct calls.
         """
-        return_typed_response, forward_contract, normalized_request = self._prepare_lm_call(
-            items=items,
-            prompt=prompt,
-            messages=messages,
-            request=request,
-            kwargs=kwargs,
+        return_typed_response, forward_contract, normalized_request = (
+            self._prepare_lm_call(
+                items=items,
+                prompt=prompt,
+                messages=messages,
+                request=request,
+                kwargs=kwargs,
+            )
         )
         if normalized_request is None:
-            return await self._legacy_acall_direct(*items, prompt=prompt, messages=messages, **kwargs)
+            return await self._legacy_acall_direct(
+                *items, prompt=prompt, messages=messages, **kwargs
+            )
 
         if forward_contract == "typed_lm":
             response = await self.aforward(normalized_request)
-            response = self._finalize_lm_response(normalized_request, self._validate_typed_lm_response(response))
+            response = self._finalize_lm_response(
+                normalized_request, self._validate_typed_lm_response(response)
+            )
         else:
             response = await self._legacy_aforward_as_lm_response(normalized_request)
         if return_typed_response:
@@ -414,8 +436,12 @@ class BaseLM:
         request: LMRequest | None,
         kwargs: dict[str, Any],
     ) -> tuple[bool, ForwardContract, LMRequest | None]:
-        explicit_request = request is not None or bool(items and isinstance(items[0], LMRequest))
-        return_typed_response = explicit_request or bool(settings.get("experimental", False))
+        explicit_request = request is not None or bool(
+            items and isinstance(items[0], LMRequest)
+        )
+        return_typed_response = explicit_request or bool(
+            settings.get("experimental", False)
+        )
         forward_contract = self._get_forward_contract()
         if not return_typed_response and forward_contract != "typed_lm":
             return return_typed_response, forward_contract, None
@@ -463,7 +489,9 @@ class BaseLM:
             )
         return self._process_lm_response(response, prompt, messages, **kwargs)
 
-    def _legacy_prompt_from_items(self, items: tuple[Any, ...], *, prompt: str | None) -> str | None:
+    def _legacy_prompt_from_items(
+        self, items: tuple[Any, ...], *, prompt: str | None
+    ) -> str | None:
         """Validate and extract the one positional prompt accepted by legacy calls."""
         if len(items) > 1:
             raise TypeError(
@@ -471,9 +499,13 @@ class BaseLM:
                 "Use dspy.context(experimental=True) or pass an LMRequest for typed multi-item LM calls."
             )
         if items and prompt is not None:
-            raise TypeError("Pass a prompt either positionally or by keyword, not both.")
+            raise TypeError(
+                "Pass a prompt either positionally or by keyword, not both."
+            )
         if items and isinstance(items[0], LMRequest):
-            raise TypeError("LMRequest calls require the typed LM path; this should be unreachable.")
+            raise TypeError(
+                "LMRequest calls require the typed LM path; this should be unreachable."
+            )
         return items[0] if items else prompt
 
     def _normalize_lm_call(
@@ -520,7 +552,9 @@ class BaseLM:
             return self._finalize_lm_response(request, typed_response)
         with settings.context(disable_history=True, usage_tracker=None):
             outputs = self._process_lm_response(response, prompt, messages, **data)
-        lm_response = self._legacy_outputs_to_lm_response(outputs, request=request, provider_response=response)
+        lm_response = self._legacy_outputs_to_lm_response(
+            outputs, request=request, provider_response=response
+        )
         return self._finalize_lm_response(request, lm_response)
 
     async def _legacy_aforward_as_lm_response(self, request: LMRequest) -> LMResponse:
@@ -536,7 +570,9 @@ class BaseLM:
             return self._finalize_lm_response(request, typed_response)
         with settings.context(disable_history=True, usage_tracker=None):
             outputs = self._process_lm_response(response, prompt, messages, **data)
-        lm_response = self._legacy_outputs_to_lm_response(outputs, request=request, provider_response=response)
+        lm_response = self._legacy_outputs_to_lm_response(
+            outputs, request=request, provider_response=response
+        )
         return self._finalize_lm_response(request, lm_response)
 
     def _legacy_outputs_to_lm_response(
@@ -585,7 +621,9 @@ class BaseLM:
         part = message.parts[0]
         return part.text if getattr(part, "type", None) == "text" else None
 
-    def _finalize_lm_response(self, request: LMRequest, response: LMResponse) -> LMResponse:
+    def _finalize_lm_response(
+        self, request: LMRequest, response: LMResponse
+    ) -> LMResponse:
         """Record usage and typed history for a normalized LM response."""
         if not getattr(response, "cache_hit", False) and settings.usage_tracker:
             usage = response.usage_as_dict()
@@ -607,7 +645,7 @@ class BaseLM:
         self,
         prompt: str | None = None,
         messages: list[dict[str, Any]] | None = None,
-        **kwargs
+        **kwargs,
     ):
         """Forward pass for the language model.
 
@@ -637,7 +675,7 @@ class BaseLM:
         self,
         prompt: str | None = None,
         messages: list[dict[str, Any]] | None = None,
-        **kwargs
+        **kwargs,
     ):
         """Async forward pass for the language model.
 
@@ -674,7 +712,11 @@ class BaseLM:
             A dictionary that can be passed to `BaseLM.load_state`. The state
             excludes API keys.
         """
-        filtered_kwargs = {key: value for key, value in self.kwargs.items() if key not in ("api_key", LM_CLASS_STATE_KEY)}
+        filtered_kwargs = {
+            key: value
+            for key, value in self.kwargs.items()
+            if key not in ("api_key", LM_CLASS_STATE_KEY)
+        }
         return {
             LM_CLASS_STATE_KEY: f"{type(self).__module__}.{type(self).__qualname__}",
             "model": self.model,
@@ -685,7 +727,9 @@ class BaseLM:
         }
 
     @classmethod
-    def load_state(cls, state: dict[str, Any], *, allow_custom_lm_class: bool = False) -> "BaseLM":
+    def load_state(
+        cls, state: dict[str, Any], *, allow_custom_lm_class: bool = False
+    ) -> "BaseLM":
         """Reconstruct an LM from `dump_state` output.
 
         Legacy states without a class marker load as `dspy.LM`. Custom LM
@@ -725,9 +769,16 @@ class BaseLM:
 
             lm_cls = _import_lm_class(class_path)
             if not issubclass(lm_cls, BaseLM):
-                raise TypeError(f"Serialized LM class `{class_path}` must be a subclass of dspy.BaseLM.")
-            if "allow_custom_lm_class" in inspect.signature(lm_cls.load_state).parameters:
-                return lm_cls.load_state(state, allow_custom_lm_class=allow_custom_lm_class)
+                raise TypeError(
+                    f"Serialized LM class `{class_path}` must be a subclass of dspy.BaseLM."
+                )
+            if (
+                "allow_custom_lm_class"
+                in inspect.signature(lm_cls.load_state).parameters
+            ):
+                return lm_cls.load_state(
+                    state, allow_custom_lm_class=allow_custom_lm_class
+                )
             return lm_cls.load_state(state)
 
         return cls(**state)
@@ -815,11 +866,17 @@ class BaseLM:
             output = {}
             output["text"] = c.message.content if hasattr(c, "message") else c["text"]
 
-            if hasattr(c, "message") and hasattr(c.message, "reasoning_content") and c.message.reasoning_content:
+            if (
+                hasattr(c, "message")
+                and hasattr(c.message, "reasoning_content")
+                and c.message.reasoning_content
+            ):
                 output["reasoning_content"] = c.message.reasoning_content
 
             if merged_kwargs.get("logprobs"):
-                output["logprobs"] = c.logprobs if hasattr(c, "logprobs") else c["logprobs"]
+                output["logprobs"] = (
+                    c.logprobs if hasattr(c, "logprobs") else c["logprobs"]
+                )
             if hasattr(c, "message") and getattr(c.message, "tool_calls", None):
                 output["tool_calls"] = c.message.tool_calls
 
@@ -849,7 +906,9 @@ class BaseLM:
             # Check for citations in LiteLLM provider_specific_fields
             citations_data = choice.message.provider_specific_fields.get("citations")
             if isinstance(citations_data, list):
-                return [citation for citations in citations_data for citation in citations]
+                return [
+                    citation for citations in citations_data for citation in citations
+                ]
         except Exception:
             return None
 

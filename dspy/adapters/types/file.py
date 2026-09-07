@@ -37,6 +37,7 @@ class File(Type):
     file_id: str | None = None
     filename: str | None = None
     mime_type: str | None = None
+    resolution: str | None = None
 
     model_config = pydantic.ConfigDict(
         frozen=True,
@@ -68,6 +69,7 @@ class File(Type):
                 "file_id": values.file_id,
                 "filename": values.filename,
                 "mime_type": values.mime_type,
+                "resolution": values.resolution
             }
 
         if isinstance(values, dict):
@@ -88,6 +90,8 @@ class File(Type):
                 file_dict["filename"] = self.filename
             if self.mime_type:
                 file_dict["format"] = self.mime_type
+            if self.resolution:
+                file_dict["resolution"] = self.resolution
 
             return [{"type": "file", "file": file_dict}]
         except Exception as e:
@@ -113,6 +117,8 @@ class File(Type):
             parts.append(f"filename='{self.filename}'")
         if self.mime_type is not None:
             parts.append(f"mime_type='{self.mime_type}'")
+        if self.resolution is not None:
+            parts.append(f"resolution='{self.resolution}'")
         return f"File({', '.join(parts)})"
 
     @classmethod
@@ -123,6 +129,7 @@ class File(Type):
             file_path: Path to the file to read
             filename: Optional filename to use (defaults to basename of path)
             mime_type: Optional MIME type (defaults to auto-detection from file extension)
+            resolution: Optional resolution used to rescale the file by some providers
         """
         if not os.path.isfile(file_path):
             raise ValueError(f"File not found: {file_path}")
@@ -159,15 +166,19 @@ class File(Type):
         return cls(file_data=file_data, filename=filename)
 
     @classmethod
-    def from_file_id(cls, file_id: str, filename: str | None = None, mime_type: str | None = None) -> "File":
+    def from_file_id(cls, file_id: str, filename: str | None = None,
+                mime_type: str | None = None,
+                resolution: str | None = None
+    ) -> "File":
         """Create a File from an uploaded file ID.
 
         Args:
             file_id: The uploaded file ID
             filename: Optional filename
             mime_type: Optional MIME type (passed as 'format' to the API)
+            resolution: Optional file resolution (e.g., low, medium, high)
         """
-        return cls(file_id=file_id, filename=filename, mime_type=mime_type)
+        return cls(file_id=file_id, filename=filename, mime_type=mime_type, resolution=resolution)
 
 
 def encode_file_to_dict(file_input: Any) -> dict:
@@ -190,6 +201,8 @@ def encode_file_to_dict(file_input: Any) -> dict:
             result["filename"] = file_input.filename
         if file_input.mime_type is not None:
             result["format"] = file_input.mime_type
+        if file_input.resolution is not None:
+            result["resolution"] = file_input.resolution
         return result
 
     elif isinstance(file_input, dict):

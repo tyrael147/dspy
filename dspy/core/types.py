@@ -137,7 +137,7 @@ class LMBinaryPart(LMSourcePart):
     type: Literal["binary"] = "binary"
     media_type: str = "application/octet-stream"
     filename: str | None = None
-
+    resolution: str | None = None
 
 class LMToolCallPart(LMBasePart):
     """A model request to call a tool.
@@ -1908,7 +1908,7 @@ def _binary_dict_to_part(file: dict[str, Any]) -> LMBinaryPart:
         media_type, data = _split_data_uri(file["data"])
         return LMBinaryPart(data=data, media_type=media_type, filename=file.get("filename"))
     if file.get("file_id") is not None:
-        return LMBinaryPart(file_id=file.get("file_id"), filename=file.get("filename"), media_type=file.get("format"))
+        return LMBinaryPart(file_id=file.get("file_id"), filename=file.get("filename"), media_type=file.get("format"), resolution=file.get("resolution"))
     raise ValueError("Binary content block requires data, file_data, or file_id.")
 
 

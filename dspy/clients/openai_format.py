@@ -352,6 +352,9 @@ def binary_to_openai(binary: LMBinaryPart) -> dict[str, Any]:
         file_data["filename"] = binary.filename
     if binary.media_type is not None:
         file_data["format"] = binary.media_type
+    if binary.resolution is not None:
+        file_data["detail"]=binary.resolution
+
     return {"type": "file", "file": file_data}
 
 
